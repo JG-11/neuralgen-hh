@@ -169,6 +169,7 @@ def evolutionary_process(features, max_gens, pop, pop_size, function1_values, fu
 
 
 def runNSGA2(N=10, pop_size=100, max_gens=10, runs=10):
+    results_list = []
     for run in range(1, runs+1):
         print('================================== RUN {} ================================='.format(run))
         start = time.time()
@@ -183,4 +184,6 @@ def runNSGA2(N=10, pop_size=100, max_gens=10, runs=10):
         neg_function1, neg_function2, runtime = process_end_metrics(last_f1_values, last_f2_values, last_fronts, start)
         out = DataFrame_preparation(N, last_fronts, len(last_fronts[0]), pop_size, neg_function1, neg_function2, runtime, max_gens, last_temp_pop, last_features)
         result_export(pop_size, max_gens, run, runtime, out)
-
+        
+        results_list.append((last_fronts, last_temp_pop, last_features))
+    return results_list

@@ -1,6 +1,8 @@
 import random
 import math
 
+from gen import *
+
 # Provides the methods to create and solve the firefighter problem
 class FFP:
 
@@ -284,23 +286,98 @@ class DummyHyperHeuristic(HyperHeuristic):
     distance = math.sqrt(distance)
     return distance
 
+class GeneticHyperHeuristic(HyperHeuristic):
+  def __init__(self, features, heuristics, chromosomes, pop_size, max_gens, runs):
+    super().__init__(features, heuristics)
+
+    input = runNSGA2(chromosomes, pop_size, max_gens, runs)
+    output = []
+
+    for i in range(len(input)):
+      partial_result = input[i]
+
+      last_fronts = partial_result[0]
+      last_temp_pop = partial_result[1]
+      last_features = partial_result[2]
+
+      for solution in last_fronts[0]:
+        for gene in range(len(last_temp_pop[solution])):
+          new_row = last_features[solution][gene]
+          new_row.append(str(last_temp_pop[solution][gene]))
+          output.append(new_row)
+
+    self.conditions = []
+    self.actions = []
+    rows = len(output)
+    for i in range(rows):
+      self.conditions.append(output[i][:-1])
+      self.actions.append(output[i][-1])
+  
+  # Returns the next heuristic to use
+  #   problem = The FFP instance being solved
+  def nextHeuristic(self, problem):
+    """
+      FFNN
+      - Training: 80% of the rules
+      - Validation: 10% of the rules
+      - Testing: 10% of the rules
+
+      > Predict
+      - Input: The current state of the problem
+      - Output: The heuristic to be used
+    """
+
+    minDistance = float("inf")
+    index = -1
+    state = []
+    for i in range(len(self.features)):
+      state.append(problem.getFeature(self.features[i]))
+    print("\t State:" + str(state))
+    print("\t Conditions:" + str(self.conditions))
+    for i in range(len(self.conditions)):
+      distance = self.__distance(self.conditions[i], state)      
+      if (distance < minDistance):
+        minDistance = distance
+        index = i
+    heuristic = self.actions[index]
+    print("\t Actions:" + str(self.actions))
+    print("\t\t=> " + str(heuristic) + " (R" + str(index) + ")")
+    return heuristic
+
+  # Returns the string representation of this dummy hyper-heuristic
+  def __str__(self):
+    text = "Features:\n\t" + str(self.features) + "\nHeuristics:\n\t" + str(self.heuristics) + "\nRules:\n"
+    for i in range(len(self.conditions)):      
+      text += "\t" + str(self.conditions[i]) + " => " + self.actions[i] + "\n"      
+    return text
+
+  # Returns the Euclidian distance between two vectors
+  def __distance(self, vectorA, vectorB):
+    distance = 0
+    for i in range(len(vectorA)):
+      distance += (vectorA[i] - vectorB[i]) ** 2
+    distance = math.sqrt(distance)
+    return distance
+
 # Tests
 # =====================
 
+if __name__ == '__main__':
+  fileName = "instances/BBGRL/50_ep0.2_0_gilbert_1.in"
+  problem = FFP(fileName)
 
-fileName = "instances/BBGRL/50_ep0.2_0_gilbert_1.in"
+  custom_hh = GeneticHyperHeuristic(["EDGE_DENSITY", "AVG_DEGREE", "BURNING_NODES", "BURNING_EDGES", "NODES_IN_DANGER"],
+  ["LDEG", "GDEG"], 10, 10, 10, 10)
 
 """
 # Solves the problem using heuristic LDEG and one firefighter
 problem = FFP(fileName)
 print("LDEG = " + str(problem.solve("LDEG", 1, True)))
 
-
 # Solves the problem using heuristic GDEG and one firefighter
 problem = FFP(fileName)
 print("GDEG = " + str(problem.solve("GDEG", 1, False)))
 
-"""
 # Solves the problem using a randomly generated dummy hyper-heuristic
 problem = FFP(fileName)
 seed = random.randint(0, 1000)
@@ -308,3 +385,4 @@ print('Seed:', seed)
 hh = DummyHyperHeuristic(["EDGE_DENSITY", "BURNING_NODES", "NODES_IN_DANGER"], ["LDEG", "GDEG"], 2, seed)
 print(hh)
 print("Dummy HH = " + str(problem.solve(hh, 1, False)))
+"""
