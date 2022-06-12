@@ -1,6 +1,8 @@
 """
-Author: Benjamin M. Sainz-Tinajero @ Tecnologico de Monterrey, 2022.
-
+Authors:
+    - Benjamin M. Sainz-Tinajero @ Tecnologico de Monterrey, 2022.
+    - Dachely Otero @ Tecnologico de Monterrey, 2022.
+    - Genaro Almaraz @ Tecnologico de Monterrey, 2022.
 """
 
 

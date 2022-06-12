@@ -1,6 +1,8 @@
 """
-Author: Benjamin M. Sainz-Tinajero @ Tecnologico de Monterrey, 2022.
-
+Authors:
+    - Benjamin M. Sainz-Tinajero @ Tecnologico de Monterrey, 2022.
+    - Dachely Otero @ Tecnologico de Monterrey, 2022.
+    - Genaro Almaraz @ Tecnologico de Monterrey, 2022.
 """
 
 import random
@@ -12,7 +14,7 @@ def getFitness(args):
     f1 = random.uniform(0, 1)
     f2 = random.uniform(0, 1)
     features = []
-    print("Chromosome:", chromosome)
+    #print("Chromosome:", chromosome)
     for i in range(len(chromosome)):
         state = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
         features.append(state)

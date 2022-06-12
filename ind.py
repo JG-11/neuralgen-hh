@@ -1,6 +1,8 @@
 """
-Author: Benjamin M. Sainz-Tinajero @ Tecnologico de Monterrey, 2022.
-
+Authors:
+    - Benjamin M. Sainz-Tinajero @ Tecnologico de Monterrey, 2022.
+    - Dachely Otero @ Tecnologico de Monterrey, 2022.
+    - Genaro Almaraz @ Tecnologico de Monterrey, 2022.
 """
 
 
@@ -26,9 +28,4 @@ def initial_pop(N, pop_size, max_gens):
     parallel_pop_args = [[heuristics, N] for i in range(pop_size)]
     pop = [getRandomPath(arg) for arg in parallel_pop_args]
     print('Population size: {}. Generations: {}'.format(len(pop), max_gens))
-    print("Pop List")
-    print(pop)
-    print(len(pop))
-    print(len(pop[0]))
-    print("Pop List")
     return pop
