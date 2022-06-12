@@ -14,7 +14,6 @@ from neural_network import *
 
 # Provides the methods to create and solve the firefighter problem
 class FFP:
-
   # Constructor
   #   fileName = The name of the file that contains the FFP instance
   def __init__(self, fileName):
@@ -296,10 +295,10 @@ class DummyHyperHeuristic(HyperHeuristic):
     return distance
 
 class GeneticHyperHeuristic(HyperHeuristic):
-  def __init__(self, features, heuristics, chromosomes, pop_size, max_gens, runs):
+  def __init__(self, features, heuristics, problem, firefighters, chromosomes, pop_size, max_gens, runs):
     super().__init__(features, heuristics)
 
-    input = runNSGA2(chromosomes, pop_size, max_gens, runs)
+    input = runNSGA2(chromosomes, pop_size, max_gens, runs, problem, features, firefighters)
     output = []
     
     self.parse_classes = {}
@@ -363,8 +362,8 @@ if __name__ == '__main__':
 
   features = ["EDGE_DENSITY", "AVG_DEGREE", "BURNING_NODES", "BURNING_EDGES", "NODES_IN_DANGER"]
   heuristics = ["LDEG", "GDEG"]
-
-  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes=10, pop_size=10, max_gens=10, runs=1)
+  
+  custom_hh = GeneticHyperHeuristic(features, heuristics, problem, firefighters=1, chromosomes=10, pop_size=10, max_gens=10, runs=10)
   print(custom_hh)
   print("Custom HyperHeuristic = " + str(problem.solve(custom_hh, 1, False)))
 

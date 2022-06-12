@@ -5,20 +5,19 @@ Authors:
     - Genaro Almaraz @ Tecnologico de Monterrey, 2022.
 """
 
-import random
+from global_vars import *
 
-# args = initial_pop(N, pop_size, max_gens)
-
+# args = [objective_arguments]
 def getFitness(args):
+    print(F1)
     chromosome = args[0]
-    f1 = random.uniform(0, 1)
-    f2 = random.uniform(0, 1)
     features = []
-    #print("Chromosome:", chromosome)
     for i in range(len(chromosome)):
-        state = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
+        state = []
+        for i in range(len(FFP_FEATURES)):
+            state.append(0)
         features.append(state)
-    return -f1, -f2, features
+    return -F1, -F2, features
 
 """
 1. Population: combinaciones de acciones dentro de cada generación
