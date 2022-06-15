@@ -368,10 +368,11 @@ class GeneticHyperHeuristic(HyperHeuristic):
         "GDEG": 1,
       }
 
-      if exists(NN_MODEL_PATH):
+      if model_name == "NN":
         self.model = load_model(NN_MODEL_PATH)
-      elif exists(DT_MODEL_PATH):
+      else:
         self.model = joblib.load(DT_MODEL_PATH)
+        
   
   # Returns the next heuristic to use
   #   problem = The FFP instance being solved
