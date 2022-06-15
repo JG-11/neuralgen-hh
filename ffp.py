@@ -14,7 +14,6 @@ from neural_network import *
 
 # Provides the methods to create and solve the firefighter problem
 class FFP:
-
   # Constructor
   #   fileName = The name of the file that contains the FFP instance
   def __init__(self, fileName):
@@ -296,10 +295,11 @@ class DummyHyperHeuristic(HyperHeuristic):
     return distance
 
 class GeneticHyperHeuristic(HyperHeuristic):
-  def __init__(self, features, heuristics, chromosomes, pop_size, max_gens, runs):
+  def __init__(self, features, heuristics, chromosomes_size, pop_size, max_gens, runs):
     super().__init__(features, heuristics)
 
-    input = runNSGA2(chromosomes, pop_size, max_gens, runs)
+    # N=10, pop_size=100, max_gens=10, runs=10, features=[]
+    input = runNSGA2(chromosomes_size, pop_size, max_gens, runs, features)
     output = []
     
     self.parse_classes = {}
@@ -318,6 +318,10 @@ class GeneticHyperHeuristic(HyperHeuristic):
       for solution in last_fronts[0]:
         for gene in range(len(last_temp_pop[solution])):
           new_row = last_features[solution][gene]
+
+          if new_row == "Z":
+            continue
+          
           new_row.append(self.parse_classes[str(last_temp_pop[solution][gene])])
           output.append(new_row)
 
@@ -358,21 +362,23 @@ class GeneticHyperHeuristic(HyperHeuristic):
 # Tests
 # =====================
 if __name__ == '__main__':
-  fileName = "instances/BBGRL/50_ep0.2_0_gilbert_1.in"
+  fileName = "instances/BBGRL/1000_ep0.0125_0_gilbert_5.in"
   problem = FFP(fileName)
 
   features = ["EDGE_DENSITY", "AVG_DEGREE", "BURNING_NODES", "BURNING_EDGES", "NODES_IN_DANGER"]
   heuristics = ["LDEG", "GDEG"]
-
-  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes=10, pop_size=10, max_gens=10, runs=1)
+  
+  firefighters = 1
+  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=20, pop_size=10, max_gens=10, runs=5)
   print(custom_hh)
-  print("Custom HyperHeuristic = " + str(problem.solve(custom_hh, 1, False)))
+  print("Custom HyperHeuristic = " + str(problem.solve(custom_hh, firefighters, False)))
 
   seed = random.randint(0, 1000)
   print('Seed:', seed)
-  hh = DummyHyperHeuristic(["EDGE_DENSITY", "BURNING_NODES", "NODES_IN_DANGER"], ["LDEG", "GDEG"], 2, seed)
+  hh = DummyHyperHeuristic(["EDGE_DENSITY"], ["LDEG"], 1, seed)
   print(hh)
-  print("Dummy HH = " + str(problem.solve(hh, 1, False)))
+  res = problem.solve(hh, 1, False)
+  print("Dummy HH = " + str(res))
 
   print("LDEG = " + str(problem.solve("LDEG", 1, True)))
 

@@ -5,7 +5,6 @@ Authors:
     - Genaro Almaraz @ Tecnologico de Monterrey, 2022.
 """
 
-
 from oper import *
 from obj import *
 from ind import *
@@ -18,13 +17,11 @@ import time
 import multiprocessing
 import os
 
-
 def index_of(a, lst):
     for i in range(len(lst)):
         if lst[i] == a:
             return i
     return -1
-
 
 def sort_by_values(list1, values):
     sorted_list = []
@@ -137,8 +134,8 @@ def crowding_distance_cut(temp_fronts, temp_crowding_distance_values, pop_size):
     return new_pop
 
 
-def temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool):
-    objective_arguments = [[temp_pop[i]] for i in range(pop_size, 2*pop_size)]
+def temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool, ffp_features):
+    objective_arguments = [[temp_pop[i], ffp_features] for i in range(pop_size, 2*pop_size)]
     fitness_values = list(pool.map(getFitness, objective_arguments))
     parallel_f1_values = [x[0] for x in fitness_values]
     parallel_f2_values = [x[1] for x in fitness_values]
@@ -156,11 +153,11 @@ def temporal_population_metrics(temp_pop, pop_size, features, function1_values, 
     return temp_fronts, temp_crowding_distance_values, temp_function1_values, temp_function2_values, temp_features
 
 
-def evolutionary_process(features, max_gens, pop, pop_size, function1_values, function2_values, pool, start):
+def evolutionary_process(features, max_gens, pop, pop_size, function1_values, function2_values, pool, start, ffp_features):
     gen = 1
     while gen <= max_gens:
         temp_pop = temporal_population_generator(pop, function1_values, function2_values, features, pool)
-        temp_fronts, temp_crowding_distance_values, temp_function1_values, temp_function2_values, temp_features = temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool)
+        temp_fronts, temp_crowding_distance_values, temp_function1_values, temp_function2_values, temp_features = temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool, ffp_features)
         new_pop = crowding_distance_cut(temp_fronts, temp_crowding_distance_values, pop_size)
         pop = [temp_pop[i] for i in new_pop]
         function1_values = [temp_function1_values[i] for i in new_pop]
@@ -170,19 +167,23 @@ def evolutionary_process(features, max_gens, pop, pop_size, function1_values, fu
     return temp_function1_values, temp_function2_values, temp_features, temp_fronts, temp_pop
 
 
-def runNSGA2(N=10, pop_size=100, max_gens=10, runs=10):
+def runNSGA2(N=10, pop_size=100, max_gens=10, runs=10, features=[]):
     results_list = []
+
     for run in range(1, runs+1):
         print('================================== RUN {} ================================='.format(run))
         start = time.time()
         pool = multiprocessing.Pool()
+        
         init_pop = initial_pop(N, pop_size, max_gens)
-        objective_arguments = [[init_pop[i]] for i in range(pop_size)]
+        objective_arguments = [[init_pop[i], features] for i in range(pop_size)]
+        
         fitness_values = list(pool.map(getFitness, objective_arguments))
         init_f1 = [x[0] for x in fitness_values]
         init_f2 = [x[1] for x in fitness_values]
         init_features = [x[2] for x in fitness_values]
-        last_f1_values, last_f2_values, last_features, last_fronts, last_temp_pop = evolutionary_process(init_features, max_gens, init_pop, pop_size, init_f1, init_f2, pool, start)
+
+        last_f1_values, last_f2_values, last_features, last_fronts, last_temp_pop = evolutionary_process(init_features, max_gens, init_pop, pop_size, init_f1, init_f2, pool, start, features)
         neg_function1, neg_function2, runtime = process_end_metrics(last_f1_values, last_f2_values, last_fronts, start)
         out = DataFrame_preparation(N, last_fronts, len(last_fronts[0]), pop_size, neg_function1, neg_function2, runtime, max_gens, last_temp_pop, last_features)
         result_export(pop_size, max_gens, run, runtime, out)
