@@ -329,7 +329,7 @@ class GeneticHyperHeuristic(HyperHeuristic):
       for i, value in enumerate(heuristics):
         self.parse_classes[value] = i
 
-      print("\t Neural Network classes:" + str(self.parse_classes))
+      print("\t Classification classes:" + str(self.parse_classes))
 
       for i in range(len(input)):
         partial_result = input[i]
