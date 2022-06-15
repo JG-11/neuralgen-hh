@@ -17,14 +17,11 @@ import time
 import multiprocessing
 import os
 
-from global_vars import *
-
 def index_of(a, lst):
     for i in range(len(lst)):
         if lst[i] == a:
             return i
     return -1
-
 
 def sort_by_values(list1, values):
     sorted_list = []
@@ -137,8 +134,8 @@ def crowding_distance_cut(temp_fronts, temp_crowding_distance_values, pop_size):
     return new_pop
 
 
-def temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool):
-    objective_arguments = [[temp_pop[i]] for i in range(pop_size, 2*pop_size)]
+def temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool, ffp_features):
+    objective_arguments = [[temp_pop[i], ffp_features] for i in range(pop_size, 2*pop_size)]
     fitness_values = list(pool.map(getFitness, objective_arguments))
     parallel_f1_values = [x[0] for x in fitness_values]
     parallel_f2_values = [x[1] for x in fitness_values]
@@ -156,11 +153,11 @@ def temporal_population_metrics(temp_pop, pop_size, features, function1_values, 
     return temp_fronts, temp_crowding_distance_values, temp_function1_values, temp_function2_values, temp_features
 
 
-def evolutionary_process(features, max_gens, pop, pop_size, function1_values, function2_values, pool, start, f1, f2, problem, ffp_features):
+def evolutionary_process(features, max_gens, pop, pop_size, function1_values, function2_values, pool, start, ffp_features):
     gen = 1
     while gen <= max_gens:
         temp_pop = temporal_population_generator(pop, function1_values, function2_values, features, pool)
-        temp_fronts, temp_crowding_distance_values, temp_function1_values, temp_function2_values, temp_features = temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool)
+        temp_fronts, temp_crowding_distance_values, temp_function1_values, temp_function2_values, temp_features = temporal_population_metrics(temp_pop, pop_size, features, function1_values, function2_values, gen, start, pool, ffp_features)
         new_pop = crowding_distance_cut(temp_fronts, temp_crowding_distance_values, pop_size)
         pop = [temp_pop[i] for i in new_pop]
         function1_values = [temp_function1_values[i] for i in new_pop]
@@ -170,50 +167,26 @@ def evolutionary_process(features, max_gens, pop, pop_size, function1_values, fu
     return temp_function1_values, temp_function2_values, temp_features, temp_fronts, temp_pop
 
 
-def runNSGA2(N=10, pop_size=100, max_gens=10, runs=10, problem=None, features=[], firefighters=1):
+def runNSGA2(N=10, pop_size=100, max_gens=10, runs=10, features=[]):
     results_list = []
 
-    unsolved = problem
     for run in range(1, runs+1):
         print('================================== RUN {} ================================='.format(run))
         start = time.time()
         pool = multiprocessing.Pool()
         
         init_pop = initial_pop(N, pop_size, max_gens)
-        objective_arguments = [[init_pop[i]] for i in range(pop_size)]
-
-        
-        FFP_FEATURES = features
-        PROBLEM = problem
-
-        global F1
-        F1 = 0
-        F2 = PROBLEM.getFeature("BURNING_NODES")
+        objective_arguments = [[init_pop[i], features] for i in range(pop_size)]
         
         fitness_values = list(pool.map(getFitness, objective_arguments))
         init_f1 = [x[0] for x in fitness_values]
         init_f2 = [x[1] for x in fitness_values]
         init_features = [x[2] for x in fitness_values]
 
-        last_f1_values, last_f2_values, last_features, last_fronts, last_temp_pop = evolutionary_process(init_features, max_gens, init_pop, pop_size, init_f1, init_f2, pool, start, F1, F2, problem, features)
+        last_f1_values, last_f2_values, last_features, last_fronts, last_temp_pop = evolutionary_process(init_features, max_gens, init_pop, pop_size, init_f1, init_f2, pool, start, features)
         neg_function1, neg_function2, runtime = process_end_metrics(last_f1_values, last_f2_values, last_fronts, start)
         out = DataFrame_preparation(N, last_fronts, len(last_fronts[0]), pop_size, neg_function1, neg_function2, runtime, max_gens, last_temp_pop, last_features)
         result_export(pop_size, max_gens, run, runtime, out)
         
         results_list.append((last_fronts, last_temp_pop, last_features))
-
-        heuristics = []
-        for solution in last_fronts[0]:
-            for gene in range(len(last_temp_pop[solution])):
-                heuristics.append(str(last_temp_pop[solution][gene]))
-
-        burning_nodes = float('inf')
-        number_heuristics = len(heuristics)
-        i = 0
-        while burning_nodes > 0 or number_heuristics != 0:
-            burning_nodes = problem.solve(heuristics[i], firefighters, False)
-            number_heuristics -= 1
-            i += 1
-
-        problem = unsolved
     return results_list
