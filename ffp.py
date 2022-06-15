@@ -433,12 +433,38 @@ if __name__ == '__main__':
 
   model_name = "DT"
 
-  for filename in glob.glob("./instances/GBRL/*"):
-    problem = FFP(filename)
+  filename = './instances/BBGRL/50_ep0.1_0_gilbert_1.in'
+  problem = FFP(filename)
 
-    #custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
+  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=50, pop_size=20, max_gens=20, runs=10, model_name=model_name)
+  print(custom_hh)
+  custom_hh_res = problem.solve(custom_hh, firefighters, False)
+  print("Custom HyperHeuristic = " + str(custom_hh_res))
+
+  seed = random.randint(0, 1000)
+  print('Seed:', seed)
+  hh = DummyHyperHeuristic(features, heuristics, 1, seed)
+  print(hh)
+
+  dummy_hh_res = problem.solve(hh, 1, False)
+  print("Dummy HH = " + str(dummy_hh_res))
+
+  ldeg_res = problem.solve("LDEG", 1, False)
+  print("LDEG = " + str(ldeg_res))
+
+  gdeg_res = problem.solve("GDEG", 1, False)
+  print("GDEG = " + str(gdeg_res))
+
+  instances.append(filename.split("/")[-1])
+  ldeg.append(ldeg_res)
+  gdeg.append(gdeg_res)
+  dummy.append(dummy_hh_res)
+  custom.append(custom_hh_res)
+
+  """for filename in glob.glob("./instances/GBRL/*"):
+    problem = FFP(filename)
+    
     custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=50, pop_size=20, max_gens=20, runs=10, model_name=model_name)
-    #custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=30, pop_size=10, max_gens=10, runs=2, model_name=model_name)
     print(custom_hh)
     custom_hh_res = problem.solve(custom_hh, firefighters, False)
     print("Custom HyperHeuristic = " + str(custom_hh_res))
@@ -489,7 +515,7 @@ if __name__ == '__main__':
     ldeg.append(ldeg_res)
     gdeg.append(gdeg_res)
     dummy.append(dummy_hh_res)
-    custom.append(custom_hh_res)
+    custom.append(custom_hh_res)"""
   
   df = {
     "Instance": instances,
