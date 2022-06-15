@@ -369,8 +369,10 @@ class GeneticHyperHeuristic(HyperHeuristic):
       }
 
       if model_name == "NN":
+        print("Using FFNN")
         self.model = load_model(NN_MODEL_PATH)
       else:
+        print("Using Decision Tree")
         self.model = joblib.load(DT_MODEL_PATH)
         
   
