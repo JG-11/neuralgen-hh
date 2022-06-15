@@ -382,24 +382,78 @@ class GeneticHyperHeuristic(HyperHeuristic):
 # Tests
 # =====================
 if __name__ == '__main__':
-  fileName = "instances/BBGRL/1000_ep0.0125_0_gilbert_5.in"
-  problem = FFP(fileName)
-
   features = ["EDGE_DENSITY", "AVG_DEGREE", "BURNING_NODES", "BURNING_EDGES", "NODES_IN_DANGER"]
   heuristics = ["LDEG", "GDEG"]
-  
   firefighters = 1
-  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
-  print(custom_hh)
-  print("Custom HyperHeuristic = " + str(problem.solve(custom_hh, firefighters, False)))
 
-  seed = random.randint(0, 1000)
-  print('Seed:', seed)
-  hh = DummyHyperHeuristic(["EDGE_DENSITY"], ["LDEG"], 1, seed)
-  print(hh)
-  res = problem.solve(hh, 1, False)
-  print("Dummy HH = " + str(res))
+  instances = []
+  ldeg = []
+  gdeg = []
+  dummy = []
+  custom = []
 
-  print("LDEG = " + str(problem.solve("LDEG", 1, False)))
+  for filename in glob.glob("./instances/GBRL/*"):
+    problem = FFP(filename)
 
-  print("GDEG = " + str(problem.solve("GDEG", 1, False)))
+    custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
+    print(custom_hh)
+    custom_hh_res = problem.solve(custom_hh, firefighters, False)
+    print("Custom HyperHeuristic = " + str(custom_hh_res))
+
+    seed = random.randint(0, 1000)
+    print('Seed:', seed)
+    hh = DummyHyperHeuristic(["EDGE_DENSITY"], ["LDEG"], 1, seed)
+    print(hh)
+
+    dummy_hh_res = problem.solve(hh, 1, False)
+    print("Dummy HH = " + str(dummy_hh_res))
+
+    ldeg_res = problem.solve("LDEG", 1, False)
+    print("LDEG = " + str(ldeg_res))
+
+    gdeg_res = problem.solve("GDEG", 1, False)
+    print("GDEG = " + str(gdeg_res))
+
+    instances.append(filename.split("/")[-1])
+    ldeg.append(ldeg_res)
+    gdeg.append(gdeg_res)
+    dummy.append(dummy_hh_res)
+    custom.append(custom_hh_res)
+
+  for filename in glob.glob("./instances/BBGRL/*"):
+    problem = FFP(filename)
+
+    custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
+    print(custom_hh)
+    custom_hh_res = problem.solve(custom_hh, firefighters, False)
+    print("Custom HyperHeuristic = " + str(custom_hh_res))
+
+    seed = random.randint(0, 1000)
+    print('Seed:', seed)
+    hh = DummyHyperHeuristic(["EDGE_DENSITY"], ["LDEG"], 1, seed)
+    print(hh)
+
+    dummy_hh_res = problem.solve(hh, 1, False)
+    print("Dummy HH = " + str(dummy_hh_res))
+
+    ldeg_res = problem.solve("LDEG", 1, False)
+    print("LDEG = " + str(ldeg_res))
+
+    gdeg_res = problem.solve("GDEG", 1, False)
+    print("GDEG = " + str(gdeg_res))
+
+    instances.append(filename.split("/")[-1])
+    ldeg.append(ldeg_res)
+    gdeg.append(gdeg_res)
+    dummy.append(dummy_hh_res)
+    custom.append(custom_hh_res)
+  
+  df = {
+    "Instance": instances,
+    "LDEG": ldeg,
+    "GDEG": gdeg,
+    "Dummy-HyperHeuristic": dummy,
+    "Genetic-HyperHeuristic": custom,
+  }
+  df = pd.DataFrame(df)
+  df.to_csv("results.csv", index=False)
