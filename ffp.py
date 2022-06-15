@@ -12,6 +12,12 @@ from gen import *
 
 from neural_network import *
 
+from os.path import exists
+
+from keras.models import load_model
+
+MODEL_PATH = 'neuralgen.h5'
+
 # Provides the methods to create and solve the firefighter problem
 class FFP:
   # Constructor
@@ -298,41 +304,52 @@ class GeneticHyperHeuristic(HyperHeuristic):
   def __init__(self, features, heuristics, chromosomes_size, pop_size, max_gens, runs):
     super().__init__(features, heuristics)
 
-    # N=10, pop_size=100, max_gens=10, runs=10, features=[]
-    input = runNSGA2(chromosomes_size, pop_size, max_gens, runs, features)
-    output = []
-    
-    self.parse_classes = {}
-    for i, value in enumerate(heuristics):
-      self.parse_classes[value] = i
+    trained_model = exists(MODEL_PATH)
+    if not trained_model:
+      input = runNSGA2(chromosomes_size, pop_size, max_gens, runs, features)
+      output = []
+      
+      self.parse_classes = {}
+      for i, value in enumerate(heuristics):
+        self.parse_classes[value] = i
 
-    print("\t Neural Network classes:" + str(self.parse_classes))
+      print("\t Neural Network classes:" + str(self.parse_classes))
 
-    for i in range(len(input)):
-      partial_result = input[i]
+      for i in range(len(input)):
+        partial_result = input[i]
 
-      last_fronts = partial_result[0]
-      last_temp_pop = partial_result[1]
-      last_features = partial_result[2]
+        last_fronts = partial_result[0]
+        last_temp_pop = partial_result[1]
+        last_features = partial_result[2]
 
-      for solution in last_fronts[0]:
-        for gene in range(len(last_temp_pop[solution])):
-          new_row = last_features[solution][gene]
+        for solution in last_fronts[0]:
+          for gene in range(len(last_temp_pop[solution])):
+            new_row = last_features[solution][gene]
 
-          if new_row == "Z":
-            continue
-          
-          new_row.append(self.parse_classes[str(last_temp_pop[solution][gene])])
-          output.append(new_row)
+            if new_row == ['Z']:
+              continue
+            
+            new_row.append(self.parse_classes[str(last_temp_pop[solution][gene])])
+            output.append(new_row)
 
-    self.conditions = []
-    self.actions = []
-    rows = len(output)
-    for i in range(rows):
-      self.conditions.append(output[i][:-1])
-      self.actions.append(output[i][-1])
-    
-    self.model = train_neural_network(self.conditions, self.actions, 1, len(features))
+      self.conditions = []
+      self.actions = []
+      rows = len(output)
+      for i in range(rows):
+        self.conditions.append(output[i][:-1])
+        self.actions.append(output[i][-1])
+      
+      self.model = train_neural_network(self.conditions, self.actions, 1, len(features))
+    else:
+      self.conditions = "Already trained"
+      self.actions = "Already trained"
+      
+      self.parse_classes = {
+        "LDEG": 0,
+        "GDEG": 1,
+      }
+
+      self.model = load_model(MODEL_PATH)
   
   # Returns the next heuristic to use
   #   problem = The FFP instance being solved
@@ -355,8 +372,11 @@ class GeneticHyperHeuristic(HyperHeuristic):
   # Returns the string representation of this dummy hyper-heuristic
   def __str__(self):
     text = "Features:\n\t" + str(self.features) + "\nHeuristics:\n\t" + str(self.heuristics) + "\nRules:\n"
-    for i in range(len(self.conditions)):      
-      text += "\t" + str(self.conditions[i]) + " => " + str(self.actions[i]) + "\n"      
+    if isinstance(self.conditions, str):
+      text += "\t" + self.conditions + "\n" " => " + self.actions + "\n"
+    else:
+      for i in range(len(self.conditions)):      
+        text += "\t" + str(self.conditions[i]) + " => " + str(self.actions[i]) + "\n"
     return text
 
 # Tests
@@ -369,7 +389,7 @@ if __name__ == '__main__':
   heuristics = ["LDEG", "GDEG"]
   
   firefighters = 1
-  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=20, pop_size=10, max_gens=10, runs=5)
+  custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
   print(custom_hh)
   print("Custom HyperHeuristic = " + str(problem.solve(custom_hh, firefighters, False)))
 
@@ -380,6 +400,6 @@ if __name__ == '__main__':
   res = problem.solve(hh, 1, False)
   print("Dummy HH = " + str(res))
 
-  print("LDEG = " + str(problem.solve("LDEG", 1, True)))
+  print("LDEG = " + str(problem.solve("LDEG", 1, False)))
 
   print("GDEG = " + str(problem.solve("GDEG", 1, False)))

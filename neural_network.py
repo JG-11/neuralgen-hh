@@ -30,4 +30,6 @@ def train_neural_network(X, y, verbose=0, input_dim=5):
     
     print("Training accuracy:", training_acc)
 
+    model.save('neuralgen.h5')
+
     return model
