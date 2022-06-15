@@ -10,13 +10,17 @@ import math
 
 from gen import *
 
-from neural_network import *
+from ai_models import *
 
 from os.path import exists
 
 from keras.models import load_model
 
-MODEL_PATH = 'neuralgen.h5'
+import joblib
+
+NN_MODEL_PATH = 'neuralgen.h5'
+DT_MODEL_PATH = 'decision_tree_model_joblib.pickle'
+NOTHING_HEURISTIC = 'Nothing'
 
 # Provides the methods to create and solve the firefighter problem
 class FFP:
@@ -46,7 +50,11 @@ class FFP:
       x = int(tokens.pop(0))
       y = int(tokens.pop(0))
       self.graph[x][y] = 1
-      self.graph[y][x] = 1    
+      self.graph[y][x] = 1
+
+    self.iteration = None
+    self.whole_state = []
+    self.state_features = []
 
   # Solves the FFP by using a given method and a number of firefighters
   #   method = Either a string with the name of one available heuristic or an object of class HyperHeuristic
@@ -56,7 +64,7 @@ class FFP:
     spreading = True
     if (debug):
       print("Initial state:" + str(self.state))    
-    t = 0
+    self.iteration = 0
     while (spreading):
       if (debug):
         print("Features")
@@ -67,9 +75,10 @@ class FFP:
         print("Burning edges: %1.4f" % self.getFeature("BURNING_EDGES"))
         print("Nodes in danger: %1.4f" % self.getFeature("NODES_IN_DANGER"))
       # It protects the nodes (based on the number of available firefighters)
-      for i in range(nbFighters):
+      for i in range(nbFighters):        
         heuristic = method
         if (isinstance(method, HyperHeuristic)):
+          self.iteration += 1
           heuristic = method.nextHeuristic(self)
         node = self.__nextNode(heuristic)
         if (node >= 0):
@@ -80,7 +89,7 @@ class FFP:
             self.graph[node][j] = 0
             self.graph[j][node] = 0
           if (debug):
-            print("\tt" + str(t) + ": A firefighter protects node " + str(node))            
+            print("\tt" + str(self.iteration) + ": A firefighter protects node " + str(node))            
       # It spreads the fire among the unprotected nodes
       spreading = False 
       state = self.state.copy()
@@ -96,8 +105,11 @@ class FFP:
               self.graph[i][j] = 0
               self.graph[j][i] = 0
               if (debug):
-                print("\tt" + str(t) + ": Fire spreads to node " + str(j))     
-      t = t + 1
+                print("\tt" + str(self.iteration) + ": Fire spreads to node " + str(j))     
+      self.iteration += 1
+      ffp_features = ["EDGE_DENSITY", "AVG_DEGREE", "BURNING_NODES", "BURNING_EDGES", "NODES_IN_DANGER"]
+      self.state_features.append([self.getFeature(ffp_features[0]), self.getFeature(ffp_features[1]), self.getFeature(ffp_features[2]), self.getFeature(ffp_features[3]), self.getFeature(ffp_features[4])])
+      self.whole_state.append(self.state_features)
       if (debug):
         print("---------------")
     if (debug):    
@@ -125,7 +137,9 @@ class FFP:
               value = sum(self.graph[i])              
               break
         elif (heuristic == "GDEG"):        
-          value = sum(self.graph[i])          
+          value = sum(self.graph[i])   
+        elif (heuristic == NOTHING_HEURISTIC):
+          value = best    
         else:
           print("=====================")
           print("Critical error at FFP.__nextNode.")
@@ -301,10 +315,12 @@ class DummyHyperHeuristic(HyperHeuristic):
     return distance
 
 class GeneticHyperHeuristic(HyperHeuristic):
-  def __init__(self, features, heuristics, chromosomes_size, pop_size, max_gens, runs):
+  def __init__(self, features, heuristics, chromosomes_size, pop_size, max_gens, runs, model_name="DT"):
     super().__init__(features, heuristics)
 
-    trained_model = exists(MODEL_PATH)
+    self.model_name = model_name
+
+    trained_model = (exists(NN_MODEL_PATH) or exists(DT_MODEL_PATH))
     if not trained_model:
       input = runNSGA2(chromosomes_size, pop_size, max_gens, runs, features)
       output = []
@@ -339,7 +355,10 @@ class GeneticHyperHeuristic(HyperHeuristic):
         self.conditions.append(output[i][:-1])
         self.actions.append(output[i][-1])
       
-      self.model = train_neural_network(self.conditions, self.actions, 1, len(features))
+      if model_name == "NN":
+        self.model = train_neural_network(self.conditions, self.actions, 1, len(features))
+      else:
+        self.model = train_decision_tree(self.conditions, self.actions)
     else:
       self.conditions = "Already trained"
       self.actions = "Already trained"
@@ -349,7 +368,10 @@ class GeneticHyperHeuristic(HyperHeuristic):
         "GDEG": 1,
       }
 
-      self.model = load_model(MODEL_PATH)
+      if exists(NN_MODEL_PATH):
+        self.model = load_model(NN_MODEL_PATH)
+      elif exists(DT_MODEL_PATH):
+        self.model = joblib.load(DT_MODEL_PATH)
   
   # Returns the next heuristic to use
   #   problem = The FFP instance being solved
@@ -359,12 +381,15 @@ class GeneticHyperHeuristic(HyperHeuristic):
       state.append(problem.getFeature(self.features[i]))
     print("\t State:" + str(state))
 
-    predictions = self.model.predict(np.array(state).reshape(1, -1))
-    predicted_class = int(predictions[np.argmax(predictions[0])][0])
+    if(self.model_name == "NN"):
+      predictions = self.model.predict(np.array(state).reshape(1, -1))
+      predicted_class = int(predictions[np.argmax(predictions[0])][0])
+    else:
+      prediction = self.model.predict(np.array(state).reshape(1, -1))
+      predicted_class = prediction[0]
 
     keys = list(self.parse_classes.keys())
     heuristic = keys[predicted_class]
-
     print("Selected heuristic:" + heuristic)
     
     return heuristic
@@ -379,6 +404,17 @@ class GeneticHyperHeuristic(HyperHeuristic):
         text += "\t" + str(self.conditions[i]) + " => " + str(self.actions[i]) + "\n"
     return text
 
+class GeneticAux(HyperHeuristic):
+  def __init__(self, chromosome):
+    #super().__init__(features, heuristics)
+    self.chromosome = chromosome
+  
+  def nextHeuristic(self, problem):
+    if problem.iteration >= len(self.chromosome):
+      return NOTHING_HEURISTIC
+
+    return self.chromosome[problem.iteration]
+
 # Tests
 # =====================
 if __name__ == '__main__':
@@ -392,17 +428,21 @@ if __name__ == '__main__':
   dummy = []
   custom = []
 
+  model_name = "DT"
+
   for filename in glob.glob("./instances/GBRL/*"):
     problem = FFP(filename)
 
-    custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
+    #custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
+    custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=50, pop_size=20, max_gens=20, runs=10, model_name=model_name)
+    #custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=30, pop_size=10, max_gens=10, runs=2, model_name=model_name)
     print(custom_hh)
     custom_hh_res = problem.solve(custom_hh, firefighters, False)
     print("Custom HyperHeuristic = " + str(custom_hh_res))
 
     seed = random.randint(0, 1000)
     print('Seed:', seed)
-    hh = DummyHyperHeuristic(["EDGE_DENSITY"], ["LDEG"], 1, seed)
+    hh = DummyHyperHeuristic(features, heuristics, 1, seed)
     print(hh)
 
     dummy_hh_res = problem.solve(hh, 1, False)
@@ -423,14 +463,14 @@ if __name__ == '__main__':
   for filename in glob.glob("./instances/BBGRL/*"):
     problem = FFP(filename)
 
-    custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=25, pop_size=50, max_gens=50, runs=20)
+    custom_hh = GeneticHyperHeuristic(features, heuristics, chromosomes_size=50, pop_size=20, max_gens=20, runs=10, model_name=model_name)
     print(custom_hh)
     custom_hh_res = problem.solve(custom_hh, firefighters, False)
     print("Custom HyperHeuristic = " + str(custom_hh_res))
 
     seed = random.randint(0, 1000)
     print('Seed:', seed)
-    hh = DummyHyperHeuristic(["EDGE_DENSITY"], ["LDEG"], 1, seed)
+    hh = DummyHyperHeuristic(features, heuristics, 1, seed)
     print(hh)
 
     dummy_hh_res = problem.solve(hh, 1, False)

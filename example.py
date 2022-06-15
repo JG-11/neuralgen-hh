@@ -8,5 +8,24 @@ Authors:
 
 from gen import *
 
+from obj import *
+
 if __name__ == "__main__":
-    runNSGA2(N=5, pop_size=10, max_gens=10, runs=10)
+    chromosome = [
+        "LDEG",
+        "GDEG",
+        "GDEG",
+        "GDEG",
+        "LDEG",
+        "LDEG",
+        "GDEG",
+    ]
+
+    args = [chromosome, []]
+    burning_nodes, burning_edges, state_features = getFitness(args)
+
+    print("Burning nodes:", burning_nodes)
+    print("Burning edges:", burning_edges)
+    print("State features:", str(state_features))
+
+    #runNSGA2(N=5, pop_size=10, max_gens=10, runs=10)
