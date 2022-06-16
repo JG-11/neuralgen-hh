@@ -320,7 +320,13 @@ class GeneticHyperHeuristic(HyperHeuristic):
 
     self.model_name = model_name
 
-    trained_model = (exists(NN_MODEL_PATH) or exists(DT_MODEL_PATH))
+    if self.model_name == "NN" and not exists(NN_MODEL_PATH):
+      trained_model = None
+    elif self.model_name == "DT" and not exists(DT_MODEL_PATH):
+      trained_model = None
+    else:
+      trained_model = (exists(NN_MODEL_PATH) or exists(DT_MODEL_PATH))
+    
     if not trained_model:
       input = runNSGA2(chromosomes_size, pop_size, max_gens, runs, features)
       output = []
@@ -441,17 +447,19 @@ if __name__ == '__main__':
   custom_hh_res = problem.solve(custom_hh, firefighters, False)
   print("Custom HyperHeuristic = " + str(custom_hh_res))
 
+  problem = FFP(filename)
   seed = random.randint(0, 1000)
   print('Seed:', seed)
   hh = DummyHyperHeuristic(features, heuristics, 1, seed)
   print(hh)
-
   dummy_hh_res = problem.solve(hh, 1, False)
   print("Dummy HH = " + str(dummy_hh_res))
 
+  problem = FFP(filename)
   ldeg_res = problem.solve("LDEG", 1, False)
   print("LDEG = " + str(ldeg_res))
 
+  problem = FFP(filename)
   gdeg_res = problem.solve("GDEG", 1, False)
   print("GDEG = " + str(gdeg_res))
 
@@ -469,17 +477,19 @@ if __name__ == '__main__':
     custom_hh_res = problem.solve(custom_hh, firefighters, False)
     print("Custom HyperHeuristic = " + str(custom_hh_res))
 
+    problem = FFP(filename)
     seed = random.randint(0, 1000)
     print('Seed:', seed)
     hh = DummyHyperHeuristic(features, heuristics, 1, seed)
     print(hh)
-
     dummy_hh_res = problem.solve(hh, 1, False)
     print("Dummy HH = " + str(dummy_hh_res))
 
+    problem = FFP(filename)
     ldeg_res = problem.solve("LDEG", 1, False)
     print("LDEG = " + str(ldeg_res))
 
+    problem = FFP(filename)
     gdeg_res = problem.solve("GDEG", 1, False)
     print("GDEG = " + str(gdeg_res))
 
@@ -497,17 +507,19 @@ if __name__ == '__main__':
     custom_hh_res = problem.solve(custom_hh, firefighters, False)
     print("Custom HyperHeuristic = " + str(custom_hh_res))
 
+    problem = FFP(filename)
     seed = random.randint(0, 1000)
     print('Seed:', seed)
     hh = DummyHyperHeuristic(features, heuristics, 1, seed)
     print(hh)
-
     dummy_hh_res = problem.solve(hh, 1, False)
     print("Dummy HH = " + str(dummy_hh_res))
 
+    problem = FFP(filename)
     ldeg_res = problem.solve("LDEG", 1, False)
     print("LDEG = " + str(ldeg_res))
 
+    problem = FFP(filename)
     gdeg_res = problem.solve("GDEG", 1, False)
     print("GDEG = " + str(gdeg_res))
 
@@ -525,4 +537,8 @@ if __name__ == '__main__':
     "Genetic-HyperHeuristic": custom,
   }
   df = pd.DataFrame(df)
-  df.to_csv("results.csv", index=False)
+
+  if model_name == "NN":
+    df.to_csv("results_neural_network.csv", index=False)
+  else:
+    df.to_csv("results_decision_tree.csv", index=False)
